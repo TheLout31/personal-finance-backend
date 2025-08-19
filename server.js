@@ -2,6 +2,7 @@ const express = require("express");
 const connectToDB = require("./Configs/mongodb.config");
 const UserRouter = require("./Routes/user.routes");
 const TransactionRouter = require("./Routes/transaction.routes");
+const BudgetRouter = require("./Routes/budget.routes");
 const app = express();
 
 const PORT = 3000;
@@ -18,6 +19,7 @@ app.get("/test", (req, res) => {
 
 app.use("/user", UserRouter)
 app.use("/transaction", TransactionRouter)
+app.use("/budget", BudgetRouter)
 
   
   app.listen(PORT, () => {
