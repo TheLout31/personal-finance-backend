@@ -34,7 +34,7 @@ exports.logIn = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await userModel.findOne({ email });
+    const user = await userModel.findOne({ email }).select("-password");
     if (!user) {
       return res
         .status(404)
@@ -45,7 +45,7 @@ exports.logIn = async (req, res) => {
     if (isMatch) {
       var token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET_KEY);
       console.log("Your token ===>", token);
-      res.status(200).json({ message: "Successfully Logged In", token });
+      res.status(200).json({ message: "Successfully Logged In", user, token });
     } else {
       res.status(401).json({ message: "Wrong Password" });
     }
