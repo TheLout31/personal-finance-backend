@@ -43,10 +43,7 @@ exports.logIn = async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (isMatch) {
-      var token = jwt.sign(
-        { userId: user._id, role: user.role },
-        process.env.JWT_SECRET_KEY
-      );
+      var token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET_KEY);
       console.log("Your token ===>", token);
       res.status(200).json({ message: "Successfully Logged In", token });
     } else {
@@ -56,5 +53,3 @@ exports.logIn = async (req, res) => {
     res.status(500).json({ message: "Something went wrong", error });
   }
 };
-
-
