@@ -1,67 +1,55 @@
 const budgetModel = require("../Models/budget.model");
 const transactionModel = require("../Models/transaction.model");
 const userModel = require("../Models/user.model");
+// const { io, onlineUsers } = require("../server");
 
 exports.postTransactions = async (req, res) => {
   try {
     const { type, category, amount, description, toUser } = req.body;
-    const userId = req.user; // since authMiddleware attaches user info
+    const userId = req.user;
 
     let user = await userModel.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    let toUserData;
-    if (type === "transfer") {
-      if (!toUser)
-        return res
-          .status(400)
-          .json({ message: "toUser is required for transfers" });
-      toUserData = await userModel.findById(toUser);
-      if (!toUserData)
-        return res.status(404).json({ message: "Recipient user not found" });
-
-      // check sender balance
-      if (user.balance < amount) {
-        return res.status(400).json({ message: "Insufficient balance" });
-      }
-
-      user.balance -= amount;
-      toUserData.balance += amount;
-      await toUserData.save();
-    } else if (type === "income") {
-      user.balance += amount;
-    } else if (type === "expense") {
-      if (user.balance < amount) {
-        return res.status(400).json({ message: "Insufficient balance" });
-      }
-
+    if (type === "expense") {
+      // 🔹 Update budgets
       const activeBudgets = await budgetModel.find({
         user: userId,
         category: { $in: ["All", category] },
         startDate: { $lte: new Date() },
         endDate: { $gte: new Date() },
       });
-      console.log("List of active budgets", activeBudgets);
+
       for (let b of activeBudgets) {
-        if (b.spent >= b.amount) {
-          // create notification for user
-          console.log(`⚠️ Budget exceeded for ${b.category}`);
-        } else if (b.spent >= b.amount * 0.8) {
-          console.log(`⚠️ Budget nearing limit for ${b.category}`);
-        }
         b.spent += amount;
         await b.save();
       }
 
+      // 🔹 Deduct from balance
       user.balance -= amount;
-    } else {
-      return res.status(400).json({ message: "Invalid transaction type" });
     }
 
-    // Save updated user balance
+    if (type === "income") {
+      user.balance += amount;
+    }
+
+    if (type === "transfer") {
+      // 🔹 Deduct from sender
+      user.balance -= amount;
+
+      // 🔹 Add to receiver
+      let receiver = await userModel.findById(toUser);
+      if (!receiver) {
+        return res.status(404).json({ message: "Receiver not found" });
+      }
+      receiver.balance += amount;
+      await receiver.save();
+    }
+
+    // 🔹 Save sender balance
     await user.save();
 
-    // Create transaction
+    // 🔹 Create transaction record
     const newTransaction = new transactionModel({
       user: userId,
       type,
@@ -84,6 +72,7 @@ exports.postTransactions = async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+
 
 exports.getTransactions = async (req, res) => {
   try {
