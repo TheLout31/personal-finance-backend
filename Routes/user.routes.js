@@ -22,10 +22,19 @@ UserRouter.get("/", authMiddleware, async (req, res) => {
       return res
         .status(404)
         .json({ message: "User not found. Try signing up." });
-    }else{
-        res.status(200).json({ message: "User Data", user});
+    } else {
+      res.status(200).json({ message: "User Data", user });
     }
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong", error });
+  }
+});
 
+UserRouter.get("/friends", authMiddleware, async (req, res) => {
+  const userId = req.user;
+  try {
+    const friendsList = await userModel.find({ _id: { $ne: userId } }); 
+    res.status(200).json({ message: "Friends List", friendsList });
   } catch (error) {
     res.status(500).json({ message: "Something went wrong", error });
   }

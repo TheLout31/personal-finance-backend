@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const budgetSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   period: { type: String, enum: ["monthly", "yearly"], required: true },
-  category: { type: String, default: "All" }, // "All" = general budget
+  category: { type: String, enum: ["Salary", "Groceries", "Bills", "Food", "Entertainment", "Misc"] }, // "All" = general budget
   amount: { type: Number, required: true },
   spent: { type: Number, default: 0 },
   startDate: { type: Date, default: Date.now }, 
