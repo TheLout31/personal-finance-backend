@@ -1,6 +1,7 @@
 const budgetModel = require("../Models/budget.model");
 const transactionModel = require("../Models/transaction.model");
 const userModel = require("../Models/user.model");
+const sendNotification = require("../Utils/sendNotification");
 // const { io, onlineUsers } = require("../server");
 
 exports.postTransactions = async (req, res) => {
@@ -21,8 +22,33 @@ exports.postTransactions = async (req, res) => {
       });
 
       for (let b of activeBudgets) {
+        if (b.spent >= b.amount) {
+          await sendNotification(
+            userId,
+            "Budget Exceeded ⚠️",
+            `Your budget for ${category} has been exceeded!`,
+            "budget"
+          );
+        } else if (b.spent >= b.amount * 0.8) {
+          await sendNotification(
+            userId,
+            "Budget Alert 📊",
+            `You have used 80% of your ${category} budget.`,
+            "budget"
+          );
+        }
         b.spent += amount;
         await b.save();
+        
+      }
+
+      if (amount > 10000) {
+        await sendNotification(
+          userId,
+          "High Expense Alert 🚨",
+          `You spent ₹${amount} on ${category}. Keep track of your spending!`,
+          "transaction"
+        );
       }
 
       // 🔹 Deduct from balance
@@ -31,6 +57,12 @@ exports.postTransactions = async (req, res) => {
 
     if (type === "income") {
       user.balance += amount;
+      await sendNotification(
+          userId,
+          "Money Added!",
+          `You added ₹${amount}}.`,
+          "transaction"
+        );
     }
 
     if (type === "transfer") {
@@ -44,6 +76,13 @@ exports.postTransactions = async (req, res) => {
       }
       receiver.balance += amount;
       await receiver.save();
+
+      await sendNotification(
+          userId,
+          "Transfered Money",
+          `You sent ₹${amount} to ${receiver.name}.`,
+          "transaction"
+        );
     }
 
     // 🔹 Save sender balance
@@ -72,7 +111,6 @@ exports.postTransactions = async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
-
 
 exports.getTransactions = async (req, res) => {
   try {

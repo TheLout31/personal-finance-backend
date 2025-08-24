@@ -7,6 +7,7 @@ const TransactionRouter = require("./Routes/transaction.routes");
 const BudgetRouter = require("./Routes/budget.routes");
 const goalRouter = require("./Routes/goal.routes");
 const { Server } = require("socket.io");
+const NotificationRouter = require("./Routes/notification.routes");
 
 const app = express();
 const server = createServer(app);
@@ -28,6 +29,7 @@ app.use("/user", UserRouter);
 app.use("/transaction", TransactionRouter);
 app.use("/budget", BudgetRouter);
 app.use("/goal", goalRouter);
+app.use("/notification",NotificationRouter)
 
 // store connected users
 let onlineUsers = {};
