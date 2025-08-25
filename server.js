@@ -21,7 +21,7 @@ app.use(express.json());
 
 connectToDB();
 
-app.get("/test", (req, res) => {
+app.get("/", (req, res) => {
   res.json("Request working successfully!!!");
 });
 
