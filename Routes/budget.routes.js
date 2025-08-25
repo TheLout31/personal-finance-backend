@@ -75,4 +75,26 @@ BudgetRouter.get("/progress/:budgetId", authMiddleware, async (req, res) => {
   }
 });
 
+
+BudgetRouter.delete("/delete/:budgetId", authMiddleware, async (req, res) => {
+  const userId = req.user; // set by authMiddleware
+  const { budgetId } = req.params;
+
+  try {
+    // 🔍 Find the budget
+    const budget = await budgetModel.findOne({ _id: budgetId, user: userId });
+    if (!budget) {
+      return res.status(404).json({ message: "Budget not found" });
+    }
+
+    // 🗑️ Delete it
+    await budgetModel.findByIdAndDelete(budgetId);
+
+    return res.status(200).json({ message: "Budget deleted successfully" });
+  } catch (error) {
+    console.error("Delete Budget Error:", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
 module.exports = BudgetRouter;

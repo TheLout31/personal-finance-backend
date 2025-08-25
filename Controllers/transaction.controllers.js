@@ -8,6 +8,7 @@ exports.postTransactions = async (req, res) => {
   try {
     const { type, category, amount, description, toUser } = req.body;
     const userId = req.user;
+    const amt = Number(amount);
 
     let user = await userModel.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -22,6 +23,8 @@ exports.postTransactions = async (req, res) => {
       });
 
       for (let b of activeBudgets) {
+        b.spent += amt;
+        await b.save();
         if (b.spent >= b.amount) {
           await sendNotification(
             userId,
@@ -37,52 +40,49 @@ exports.postTransactions = async (req, res) => {
             "budget"
           );
         }
-        b.spent += amount;
-        await b.save();
-        
       }
 
-      if (amount > 10000) {
+      if (amt > 10000) {
         await sendNotification(
           userId,
           "High Expense Alert 🚨",
-          `You spent ₹${amount} on ${category}. Keep track of your spending!`,
+          `You spent ₹${amt} on ${category}. Keep track of your spending!`,
           "transaction"
         );
       }
 
       // 🔹 Deduct from balance
-      user.balance -= amount;
+      user.balance -= amt;
     }
 
     if (type === "income") {
-      user.balance += amount;
+      user.balance += amt;
       await sendNotification(
-          userId,
-          "Money Added!",
-          `You added ₹${amount}}.`,
-          "transaction"
-        );
+        userId,
+        "Money Added!",
+        `You added ₹${amt}}.`,
+        "transaction"
+      );
     }
 
     if (type === "transfer") {
       // 🔹 Deduct from sender
-      user.balance -= amount;
+      user.balance -= amt;
 
       // 🔹 Add to receiver
       let receiver = await userModel.findById(toUser);
       if (!receiver) {
         return res.status(404).json({ message: "Receiver not found" });
       }
-      receiver.balance += amount;
+      receiver.balance += amt;
       await receiver.save();
 
       await sendNotification(
-          userId,
-          "Transfered Money",
-          `You sent ₹${amount} to ${receiver.name}.`,
-          "transaction"
-        );
+        userId,
+        "Transfered Money",
+        `You sent ₹${amt} to ${receiver.name}.`,
+        "transaction"
+      );
     }
 
     // 🔹 Save sender balance
